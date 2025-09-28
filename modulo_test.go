@@ -89,7 +89,7 @@ func TestModulo11(t *testing.T) {
 
 	for ii, tt := range cases {
 		t.Run(fmt.Sprintf("%d_%s", ii, tt.name), func(t *testing.T) {
-			output, err := modulo11(tt.input)
+			output, err := modulo11b(tt.input)
 			if (err == nil) == tt.isErr {
 				t.Fatal(err)
 			}
@@ -99,6 +99,24 @@ func TestModulo11(t *testing.T) {
 			fmt.Printf("%d -> %d\n", tt.input, output)
 			if got, want := output, tt.output; got != want {
 				t.Errorf("got %d want %d", got, want)
+			}
+		})
+	}
+}
+
+func BenchmarkModuloFuncs(b *testing.B) {
+	for _, tt := range []struct {
+		name    string
+		modFunc func(int) (int, error)
+	}{
+		{"modulo11", modulo11},
+		{"modulo11b", modulo11b},
+	} {
+		b.Run(tt.name, func(b *testing.B) {
+			input := 900000000
+			for i := 0; i < b.N; i++ {
+				_, _ = tt.modFunc(input)
+				input++
 			}
 		})
 	}

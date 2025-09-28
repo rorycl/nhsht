@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-var InvalidModulo11 error = errors.New("invalid nhs number")
+var ErrInvalidModulo11 error = errors.New("invalid nhs number")
 
 // modulo11 generates a modulo 11 addendum to a number based on the
 // specification of NHS numbers described at Wikipedia.
@@ -48,7 +48,7 @@ func modulo11(number int) (int, error) {
 	remainder := 11 - (sum % 11)
 	switch remainder {
 	case 10:
-		return -1, InvalidModulo11
+		return -1, ErrInvalidModulo11
 	case 11:
 		remainder = 0
 	}
@@ -58,4 +58,32 @@ func modulo11(number int) (int, error) {
 		return -1, fmt.Errorf("could not convert %q to int", val)
 	}
 	return val, nil
+}
+
+func modulo11b(number int) (int, error) {
+	if number < 100000000 {
+		return -1, fmt.Errorf("number below 100000000, got %d", number)
+	}
+	if number > 999999999 {
+		return -1, fmt.Errorf("number above 999999999, got %d", number)
+	}
+
+	tempNo := number
+	sum := 0
+
+	for pos := 8; pos >= 0; pos-- {
+		lastDigit := tempNo % 10
+		tempNo /= 10 // remove last number
+		weight := 10 - pos
+		sum += lastDigit * weight
+	}
+	remainder := 11 - (sum % 11)
+	switch remainder {
+	case 10:
+		return -1, ErrInvalidModulo11
+	case 11:
+		remainder = 0
+	}
+	finalNo := number*10 + remainder
+	return finalNo, nil
 }

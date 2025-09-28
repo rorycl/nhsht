@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 )
@@ -12,6 +13,7 @@ func TestModulo11(t *testing.T) {
 		input  int
 		output int
 		isErr  bool
+		err    error
 	}{
 		{
 			name:   "too short",
@@ -66,6 +68,7 @@ func TestModulo11(t *testing.T) {
 			input:  943476596,
 			output: -1,
 			isErr:  true,
+			err:    ErrInvalidModulo11,
 		},
 		{
 			name:   "ok",
@@ -89,12 +92,20 @@ func TestModulo11(t *testing.T) {
 
 	for ii, tt := range cases {
 		t.Run(fmt.Sprintf("%d_%s", ii, tt.name), func(t *testing.T) {
-			output, err := modulo11b(tt.input)
-			if (err == nil) == tt.isErr {
-				t.Fatal(err)
+			output, err := modulo11(tt.input)
+			if tt.isErr {
+				if err == nil {
+					t.Fatal("expected error")
+				}
+				if tt.err != nil {
+					if !errors.Is(err, tt.err) {
+						t.Fatalf("expected error '%T' got '%v'", tt.err, err)
+					}
+				}
+				return
 			}
 			if err != nil {
-				return
+				t.Fatalf("unexpected error %v", err)
 			}
 			fmt.Printf("%d -> %d\n", tt.input, output)
 			if got, want := output, tt.output; got != want {
@@ -104,6 +115,29 @@ func TestModulo11(t *testing.T) {
 	}
 }
 
+// TestModuloSequence tests that any sequence of 11 consecutive 9 digit
+// numbers in the range has exactly one invalid ("checksum 10") value.
+func TestModuloSequence(t *testing.T) {
+	// start := 943476597
+	start := 900000000
+	invalidModuloCounter := 0
+	loops := 0
+	for i := 0; i <= 10; i++ {
+		loops++
+		_, err := modulo11(start + i)
+		if err != nil && errors.Is(err, ErrInvalidModulo11) {
+			invalidModuloCounter++
+		}
+	}
+	if got, want := loops, 11; got != want {
+		t.Errorf("loops got %d want %d", got, want)
+	}
+	if got, want := invalidModuloCounter, 1; got != want {
+		t.Errorf("invalid counter got %d want %d", got, want)
+	}
+}
+
+/*
 func BenchmarkModuloFuncs(b *testing.B) {
 	for _, tt := range []struct {
 		name    string
@@ -121,3 +155,4 @@ func BenchmarkModuloFuncs(b *testing.B) {
 		})
 	}
 }
+*/

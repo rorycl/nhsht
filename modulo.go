@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"strconv"
 )
 
 var ErrInvalidModulo11 error = errors.New("invalid nhs number")
@@ -29,38 +28,6 @@ var ErrInvalidModulo11 error = errors.New("invalid nhs number")
 //   - A checksum of 11 is represented by 0 in the final NHS number. If
 //     the checksum is 10 then the number is not valid.
 func modulo11(number int) (int, error) {
-	weighter := func(num, pos int) int {
-		weight := 10 - pos
-		return num * weight
-	}
-	numberString := strconv.Itoa(number)
-	if len(numberString) != 9 {
-		return -1, fmt.Errorf("expected number 9 digits in length, got %d", len(numberString))
-	}
-	sum := 0
-	for i, digit := range numberString {
-		val, err := strconv.Atoi(string(digit))
-		if err != nil {
-			return -1, fmt.Errorf("could not convert %q to int", val)
-		}
-		sum += weighter(val, i)
-	}
-	remainder := 11 - (sum % 11)
-	switch remainder {
-	case 10:
-		return -1, ErrInvalidModulo11
-	case 11:
-		remainder = 0
-	}
-	numberString += strconv.Itoa(remainder)
-	val, err := strconv.Atoi(numberString)
-	if err != nil {
-		return -1, fmt.Errorf("could not convert %q to int", val)
-	}
-	return val, nil
-}
-
-func modulo11b(number int) (int, error) {
 	if number < 100000000 {
 		return -1, fmt.Errorf("number below 100000000, got %d", number)
 	}

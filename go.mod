@@ -11,6 +11,7 @@ require (
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/jessevdk/go-flags v1.6.1 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/parquet-go/parquet-go v0.25.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect

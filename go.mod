@@ -1,4 +1,4 @@
-module github.com/rorycl/nhsnoht
+module github.com/rorycl/nhsht
 
 go 1.24.0
 

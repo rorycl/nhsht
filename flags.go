@@ -7,7 +7,7 @@ import (
 	"github.com/jessevdk/go-flags"
 )
 
-const version string = "0.0.2"
+const version string = "0.0.3"
 
 // Flags are the flag options consuming os.Args.
 type Flags struct {

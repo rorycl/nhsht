@@ -1,8 +1,9 @@
 # nhsht
 
-Generate a random salt and hash table for NHS numbers in England.
+Generate a random salt and hash table for NHS numbers in England and
+save the output to a parquet file.
 
-version 0.0.2 : 29 September 2025 : configurable goroutines 
+version 0.0.3 : 29 September 2025 : buffer writes
 
 ## About
 
@@ -17,14 +18,13 @@ The program makes use of goroutines for concurrently calculating 256
 hashsums of the salt + nhs number. A default of `8 * runtime.NumCPU()`
 is used, which may be overridden.
 
-> [!WARNING]
-> Presently the parquet file is only written on completion of the
-> calculations, requiring about 60GB of memory for generating all ~300
-> million English NHS numbers, and a similar amount of disk space.
+By default the program buffers to disk. All ~300 million possible
+English NHS numbers takes about 60GB of memory and a similar amount of
+disk space with zstd compression.
 
 > [!CAUTION]
-> Use of this program for sensitive data use cases should first be
-> carefully audited. The output files should be held securely.
+> Audits of this program prior to its use for sensitive data use cases
+> should be undertaken. Output files should be held securely.
 
 ## Usage
 
@@ -36,7 +36,7 @@ Usage:
 
 NHS Number salted hash table generator.
 
-version 0.0.2
+version 0.0.3
 
 This program: 
 
@@ -63,11 +63,11 @@ Application Options:
   -p, --parquetfile= hash table parquet file path (required)
   -r, --records=     only generate this number of records
   -g, --goroutines=  number of goroutines (default 8 * numcpu)
+  -m, --memory       use RAM memory, don't buffer to disk
   -v, --verbose      report progress of number generation
 
 Help Options:
   -h, --help         Show this help message
-
 ```
 
 ## License

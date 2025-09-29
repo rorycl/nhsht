@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -11,6 +12,7 @@ import (
 func TestGenerator(t *testing.T) {
 
 	numberOfRecords := 200_000
+	goroutineNo := runtime.NumCPU() * 8
 	var err error
 
 	// Setup a test output salt and parquet file.
@@ -35,7 +37,7 @@ func TestGenerator(t *testing.T) {
 	})
 
 	start := time.Now()
-	err = Generator(sf, pqf, numberOfRecords, true)
+	err = Generator(sf, pqf, numberOfRecords, goroutineNo, true)
 	if err != nil {
 		t.Fatal(err)
 	}

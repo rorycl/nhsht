@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"runtime"
 	"sync"
 )
 
@@ -16,10 +15,6 @@ var NumberRanges []NHSNumberRange = []NHSNumberRange{
 	NHSNumberRange{400_000_000, 499_999_999},
 	NHSNumberRange{600_000_000, 799_999_999},
 }
-
-// ConcurrentHashRoutines is the number of concurrent hash processes to
-// run simultaneously.
-var ConcurrentHashRoutines int = runtime.NumCPU()
 
 // generateNumber generates the NHS numbers for England and puts them on
 // the nhsNumberChan. If numberOfRecords is not 0, only this number of
@@ -57,12 +52,14 @@ func hasher(salt []byte, reader <-chan int, writer chan<- NHSNoHash) {
 
 // Generator is the main entry point for the program. It takes a path to
 // a salt file, parquet file and the number of records to be generated
-// (by default, all of those in the NumberRanges above) and whether
-// generated records should be reported. The function sets up and saves
-// the salt, opens and then sets up the parquet file saving destination.
-// Following this the number generator is initialised, then several
-// hashing goroutines which write to the parquet file output channel.
-func Generator(saltFile, parquetFile string, numRecords int, verbose bool) error {
+// (by default, all of those in the NumberRanges above) and number of
+// generating Goroutines (by default, the number of CPUs * 8) and
+// whether generated records should be reported. The function sets up
+// and saves the salt, opens and then sets up the parquet file saving
+// destination. Following this the number generator is initialised, then
+// several hashing goroutines which write to the parquet file output
+// channel.
+func Generator(saltFile, parquetFile string, numRecords, numGoRoutines int, verbose bool) error {
 
 	// Generate the salt and save it to disk.
 	salt, err := NewSalt()
@@ -87,9 +84,12 @@ func Generator(saltFile, parquetFile string, numRecords int, verbose bool) error
 	// Setup a number of hasher goroutines to start the generation
 	// process. When the hashers are finished, close the writerChan to
 	// signal completion to the parqetWriter.
+	if verbose {
+		fmt.Printf("Using %d goroutines\n", numGoRoutines)
+	}
 	var wg sync.WaitGroup
-	wg.Add(ConcurrentHashRoutines)
-	for i := 0; i < ConcurrentHashRoutines; i++ {
+	wg.Add(numGoRoutines)
+	for i := 0; i < numGoRoutines; i++ {
 		go func() {
 			defer wg.Done()
 			hasher(salt, numberChan, writerChan)

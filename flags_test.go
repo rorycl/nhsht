@@ -9,8 +9,9 @@ import (
 func TestParseFlags(t *testing.T) {
 
 	tests := []struct {
-		args []string
-		err  bool
+		args    []string
+		verbose bool
+		err     bool
 	}{
 		{
 			args: []string{"program", "-s", "salt", "-p", "file.parquet"},
@@ -28,16 +29,29 @@ func TestParseFlags(t *testing.T) {
 			args: []string{"program", "-s", "salt", "-r", "20"},
 			err:  true,
 		},
+		{
+			args:    []string{"program", "-s", "salt", "-p", "file.parquet", "-v"},
+			verbose: true,
+			err:     false,
+		},
 	}
 	for ii, tt := range tests {
 		t.Run(fmt.Sprintf("test_%d", ii), func(t *testing.T) {
 			os.Args = tt.args
-			_, err := ParseFlags()
-			if tt.err && err == nil {
-				t.Error("expected error")
+			f, err := ParseFlags()
+			if tt.err {
+				if err == nil {
+					t.Error("expected error")
+					return
+				}
+				return
 			}
-			if !tt.err && err != nil {
-				t.Errorf("unexpected error: %v", err)
+			if tt.err == false && err != nil {
+				t.Fatalf("unexpected error: %v", err)
+				return
+			}
+			if got, want := f.Verbose, tt.verbose; got != want {
+				t.Errorf("verbose got %t want %t", got, want)
 			}
 		})
 	}

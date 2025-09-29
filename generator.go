@@ -39,7 +39,7 @@ func generateNumber(numberOfRecords int, verbose bool) <-chan int {
 					}
 				}
 				if verbose && i%100_000 == 0 {
-					fmt.Println(i, "records generated")
+					fmt.Printf("%3.1fm records generated\n", float32(i)/1_000_000.0)
 				}
 			}
 		}
@@ -98,6 +98,9 @@ func Generator(saltFile, parquetFile string, numRecords int, verbose bool) error
 	go func() {
 		wg.Wait()
 		close(writerChan)
+		if verbose {
+			fmt.Println("Writing parquet file. Please wait.")
+		}
 	}()
 
 	if err := <-errChan; err != nil {

@@ -13,7 +13,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = Generator(flags.SaltFile, flags.ParquetFile, int(flags.Records), int(flags.GoRoutines), flags.Verbose)
+	err = Generator(
+		flags.SaltFile, flags.ParquetFile, int(flags.Records),
+		int(flags.GoRoutines), flags.Memory, flags.Verbose,
+	)
 	if err != nil {
 		fmt.Println("generator error:", err)
 		os.Exit(1)

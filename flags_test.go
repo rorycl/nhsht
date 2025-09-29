@@ -3,23 +3,29 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"testing"
 )
 
 func TestParseFlags(t *testing.T) {
 
+	defaultNoGoroutines := uint(runtime.NumCPU() * GoRoutineNumCPUFactor)
+
 	tests := []struct {
-		args    []string
-		verbose bool
-		err     bool
+		args        []string
+		verbose     bool
+		numRoutines uint
+		err         bool
 	}{
 		{
-			args: []string{"program", "-s", "salt", "-p", "file.parquet"},
-			err:  false,
+			args:        []string{"program", "-s", "salt", "-p", "file.parquet"},
+			err:         false,
+			numRoutines: defaultNoGoroutines,
 		},
 		{
-			args: []string{"program", "-s", "salt", "-p", "file.parquet", "-r", "20"},
-			err:  false,
+			args:        []string{"program", "-s", "salt", "-p", "file.parquet", "-r", "20"},
+			err:         false,
+			numRoutines: defaultNoGoroutines,
 		},
 		{
 			args: []string{"-p", "file.parquet", "-r", "20"},
@@ -30,9 +36,23 @@ func TestParseFlags(t *testing.T) {
 			err:  true,
 		},
 		{
-			args:    []string{"program", "-s", "salt", "-p", "file.parquet", "-v"},
-			verbose: true,
-			err:     false,
+			args:        []string{"program", "-s", "salt", "-p", "file.parquet", "-v"},
+			verbose:     true,
+			err:         false,
+			numRoutines: defaultNoGoroutines,
+		},
+		{
+			args: []string{"program", "-s", "salt", "-p", "file.parquet", "-g", "'-3'"},
+			err:  true,
+		},
+		{
+			args:        []string{"program", "-s", "salt", "-p", "file.parquet", "-g", "40"},
+			err:         false,
+			numRoutines: 40,
+		},
+		{
+			args: []string{"program", "-s", "salt", "-p", "file.parquet", "-g", "800000"},
+			err:  true,
 		},
 	}
 	for ii, tt := range tests {
@@ -44,14 +64,19 @@ func TestParseFlags(t *testing.T) {
 					t.Error("expected error")
 					return
 				}
+				fmt.Println(err)
 				return
 			}
 			if tt.err == false && err != nil {
+				fmt.Println(err)
 				t.Fatalf("unexpected error: %v", err)
 				return
 			}
 			if got, want := f.Verbose, tt.verbose; got != want {
 				t.Errorf("verbose got %t want %t", got, want)
+			}
+			if got, want := f.GoRoutines, tt.numRoutines; got != want {
+				t.Errorf("number of goroutines got %d want %d", got, want)
 			}
 		})
 	}

@@ -53,13 +53,16 @@ func hasher(salt []byte, reader <-chan int, writer chan<- NHSNoHash) {
 // Generator is the main entry point for the program. It takes a path to
 // a salt file, parquet file and the number of records to be generated
 // (by default, all of those in the NumberRanges above) and number of
-// generating Goroutines (by default, the number of CPUs * 8) and
-// whether generated records should be reported. The function sets up
-// and saves the salt, opens and then sets up the parquet file saving
-// destination. Following this the number generator is initialised, then
-// several hashing goroutines which write to the parquet file output
-// channel.
-func Generator(saltFile, parquetFile string, numRecords, numGoRoutines int, verbose bool) error {
+// generating Goroutines (by default, the number of CPUs * 8), whether
+// the parquet file should be generated entirely in memory before
+// flushing to disk and whether generated records should be reported.
+// The function sets up and saves the salt, opens and then sets up the
+// parquet file saving destination. Following this the number generator
+// is initialised, then several hashing goroutines which write to the
+// parquet file output channel.
+func Generator(
+	saltFile, parquetFile string, numRecords, numGoRoutines int,
+	inMemory, verbose bool) error {
 
 	// Generate the salt and save it to disk.
 	salt, err := NewSalt()
@@ -73,7 +76,7 @@ func Generator(saltFile, parquetFile string, numRecords, numGoRoutines int, verb
 
 	// Setup the parquet file writer to share amongst the generator
 	// functions.
-	writerChan, errChan, err := parquetWriter(parquetFile)
+	writerChan, errChan, err := parquetWriter(parquetFile, inMemory)
 	if err != nil {
 		return err
 	}

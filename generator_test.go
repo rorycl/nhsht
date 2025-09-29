@@ -37,7 +37,8 @@ func TestGenerator(t *testing.T) {
 	})
 
 	start := time.Now()
-	err = Generator(sf, pqf, numberOfRecords, goroutineNo, true)
+	inMemory := false
+	err = Generator(sf, pqf, numberOfRecords, goroutineNo, inMemory, true)
 	if err != nil {
 		t.Fatal(err)
 	}

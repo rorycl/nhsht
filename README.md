@@ -2,25 +2,31 @@
 
 Generate a random salt and hash table for NHS numbers in England.
 
-version 0.0.1 : 29 September 2025 : First release
+version 0.0.2 : 29 September 2025 : configurable goroutines 
 
 ## About
 
-This program generates a random salt and hash table for all NHS numbers
-in England as specified by the number range on the [NHS Number Wikipedia
-article](https://en.wikipedia.org/wiki/NHS_number), using the modulo11
-calculation specified there. The resulting hash table is saved to a
-parquet file, suitable for performing lookups with tools such as
-[duckdb](https://duckdb.org/).
+This program generates a random 256 bit salt and corresponding hash
+table for all NHS numbers in England as specified by the number range on
+the [NHS Number Wikipedia article](https://en.wikipedia.org/wiki/NHS_number),
+using the modulo11 calculation specified there. The resulting hash table
+is saved to a parquet file, suitable for performing lookups with tools
+such as [duckdb](https://duckdb.org/).
 
 The program makes use of goroutines for concurrently calculating 256
-hashsums of the salt + nhs number.
+hashsums of the salt + nhs number. A default of `8 * runtime.NumCPU()`
+is used, which may be overridden.
 
-Presently the parquet file is only written on completion of the
-calculations, requiring about 60GB of memory for generating all ~300
-million English NHS numbers, and a similar amount of disk space.
+> [!WARNING]
+> Presently the parquet file is only written on completion of the
+> calculations, requiring about 60GB of memory for generating all ~300
+> million English NHS numbers, and a similar amount of disk space.
 
-### Usage
+> [!CAUTION]
+> Use of this program for sensitive data use cases should first be
+> carefully audited. The output files should be held securely.
+
+## Usage
 
 ```
 $ nhsht -h
@@ -30,7 +36,7 @@ Usage:
 
 NHS Number salted hash table generator.
 
-version 0.0.1
+version 0.0.2
 
 This program: 
 
@@ -56,6 +62,7 @@ Application Options:
   -s, --saltfile=    file to save hex encoded salt (required)
   -p, --parquetfile= hash table parquet file path (required)
   -r, --records=     only generate this number of records
+  -g, --goroutines=  number of goroutines (default 8 * numcpu)
   -v, --verbose      report progress of number generation
 
 Help Options:
@@ -65,4 +72,5 @@ Help Options:
 
 ## License
 
-This project is licensed under the [MIT Licence](LICENCE).
+This project is licensed under the [MIT Licence](LICENCE) and provides
+no guarantee of its fitness for purpose for any use.

@@ -17,14 +17,21 @@ type NHSNoHash struct {
 	Hash  string `parquet:"hash,zstd"`
 }
 
+// RowBufferSize is the number of NHSnoHash records to hold in memory
+// before flushing to the parquet writer. (The writer itself may not
+// flush the records to disk at this point.)
+const RowBufferSize int = 100_000
+
 // parquetWriter provides an NHSNoHash chan for writing records to a
 // parquet file, providing also an error chan for reporting writing or
-// other errors.
+// other errors. The inMemory flag dictates if the parquet writer should
+// keep data only in RAM or buffer it to disk. Note that buffering to
+// disk will cause considerably more IO.
 //
 // Usage example:
 //
-//  // Initialiase parquetWriter.
-//	writerChan, errChan, err := parquetWriter(fn)
+//	// Initialiase parquetWriter.
+//	writerChan, errChan, err := parquetWriter(fn, true)
 //	if err != nil {
 //		t.Fatal(err)
 //	}
@@ -45,8 +52,7 @@ type NHSNoHash struct {
 //	if err := <-errChan; err != nil {
 //		t.Fatal(err)
 //	}
-
-func parquetWriter(filename string) (chan<- NHSNoHash, <-chan error, error) {
+func parquetWriter(filename string, inMemory bool) (chan<- NHSNoHash, <-chan error, error) {
 
 	var err error
 	writerChan := make(chan NHSNoHash)
@@ -57,17 +63,39 @@ func parquetWriter(filename string) (chan<- NHSNoHash, <-chan error, error) {
 		return nil, nil, fmt.Errorf("parquet file creation error: %w", err)
 	}
 
-	writer := parquet.NewWriter(f)
+	var writer *parquet.GenericWriter[NHSNoHash]
+	if inMemory {
+		writer = parquet.NewGenericWriter[NHSNoHash](f)
+	} else {
+		writer = parquet.NewGenericWriter[NHSNoHash](
+			f,
+			parquet.ColumnPageBuffers(parquet.NewFileBufferPool("", "nhsht-buffers.*")),
+		)
+	}
 
 	go func() {
 		defer close(errorChan)
 		i := 0
-		for record := range writerChan {
-			if err = writer.Write(record); err != nil {
+		buffer := make([]NHSNoHash, 0, RowBufferSize)
+		flush := func() {
+			_, err = writer.Write(buffer)
+			if err != nil {
 				errorChan <- fmt.Errorf("parquet file row %d write error: %w", i, err)
 				return
 			}
+			buffer = buffer[:0] // reuse allocation
+		}
+
+		for record := range writerChan {
+			buffer = append(buffer, record)
+			if len(buffer) >= RowBufferSize {
+				flush()
+			}
 			i++
+		}
+		// flush any remaining records
+		if len(buffer) > 0 {
+			flush()
 		}
 		// close parquet writer and flush file to disk
 		if err = writer.Close(); err != nil {

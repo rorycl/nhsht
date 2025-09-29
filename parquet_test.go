@@ -26,7 +26,8 @@ func TestParquetWriter(t *testing.T) {
 		_ = os.Remove(fn) // remove the test file
 	})
 
-	writerChan, errChan, err := parquetWriter(fn)
+	inMemory := false
+	writerChan, errChan, err := parquetWriter(fn, inMemory)
 	if err != nil {
 		t.Fatal(err)
 	}

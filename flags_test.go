@@ -4,17 +4,20 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strconv"
 	"testing"
 )
 
 func TestParseFlags(t *testing.T) {
 
 	defaultNoGoroutines := uint(runtime.NumCPU() * GoRoutineNumCPUFactor)
+	maxNoGoroutines := uint(GoRoutineNumCPUFactorMax + 1)
 
 	tests := []struct {
 		args        []string
 		verbose     bool
 		numRoutines uint
+		memory      bool
 		err         bool
 	}{
 		{
@@ -51,8 +54,14 @@ func TestParseFlags(t *testing.T) {
 			numRoutines: 40,
 		},
 		{
-			args: []string{"program", "-s", "salt", "-p", "file.parquet", "-g", "800000"},
+			args: []string{"program", "-s", "salt", "-p", "file.parquet", "-g", strconv.Itoa(int(maxNoGoroutines))},
 			err:  true,
+		},
+		{
+			args:        []string{"program", "-s", "salt", "-p", "file.parquet", "-m"},
+			err:         false,
+			memory:      true,
+			numRoutines: defaultNoGoroutines,
 		},
 	}
 	for ii, tt := range tests {
@@ -77,6 +86,9 @@ func TestParseFlags(t *testing.T) {
 			}
 			if got, want := f.GoRoutines, tt.numRoutines; got != want {
 				t.Errorf("number of goroutines got %d want %d", got, want)
+			}
+			if got, want := f.Memory, tt.memory; got != want {
+				t.Errorf("use memory got %t want %t", got, want)
 			}
 		})
 	}

@@ -15,6 +15,7 @@ type Flags struct {
 	ParquetFile string `short:"p" long:"parquetfile" description:"hash table parquet file path (required)" required:"yes"`
 	Records     uint   `short:"r" long:"records" description:"only generate this number of records"`
 	GoRoutines  uint   `short:"g" long:"goroutines" description:"number of goroutines (default 8 * numcpu)"`
+	Memory      bool   `short:"m" long:"memory" description:"use RAM memory, don't buffer to disk"`
 	Verbose     bool   `short:"v" long:"verbose" description:"report progress of number generation"`
 }
 
@@ -22,7 +23,7 @@ type Flags struct {
 const GoRoutineNumCPUFactor int = 8
 
 // Maximum number of goroutines to run
-const GoRoutineNumCPUFactorMax int = 30
+var GoRoutineNumCPUFactorMax int = runtime.NumCPU() * 30
 
 var cmdTpl string = `
 
@@ -63,7 +64,7 @@ func ParseFlags() (*Flags, error) {
 	if options.GoRoutines == 0 {
 		options.GoRoutines = uint(runtime.NumCPU() * GoRoutineNumCPUFactor)
 	}
-	if options.GoRoutines > uint(runtime.NumCPU()*GoRoutineNumCPUFactorMax) {
+	if options.GoRoutines > uint(GoRoutineNumCPUFactorMax) {
 		err := fmt.Errorf(
 			"goroutine number of %d more than permitted maximum of %d",
 			options.GoRoutines,

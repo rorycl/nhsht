@@ -1,3 +1,6 @@
+# ignore binary
 nhsht
+# ignore coverage files
 cover*
+# ignore tmp output directory
 tmp/*

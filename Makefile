@@ -68,6 +68,16 @@ module-update-tidy:
 	go get -u ./...
 	go mod tidy
 
+install-builder:
+	# very dependency heavy
+	# go install github.com/goreleaser/goreleaser/v2@latest
+	echo "get deb from https://github.com/goreleaser/goreleaser/releases"
+
 build:
-	go build -o bin/genact ./cmd/genact/
-	go build -o bin/thinner ./cmd/thinner/
+	go build .
+
+gorelease-local:
+	goreleaser release --snapshot --clean
+
+gorelease:
+	goreleaser release --clean

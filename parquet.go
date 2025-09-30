@@ -22,6 +22,10 @@ type NHSNoHash struct {
 // flush the records to disk at this point.)
 const RowBufferSize int = 100_000
 
+// BloomBitsPerValue is the number of bits per value to use for
+// NHSNoHash columns
+const BloomBitsPerValue uint = 16
+
 // parquetWriter provides an NHSNoHash chan for writing records to a
 // parquet file, providing also an error chan for reporting writing or
 // other errors. The inMemory flag dictates if the parquet writer should
@@ -63,12 +67,21 @@ func parquetWriter(filename string, inMemory bool) (chan<- NHSNoHash, <-chan err
 		return nil, nil, fmt.Errorf("parquet file creation error: %w", err)
 	}
 
+	// Configure the parquet writer for either in-memory mode or
+	// buffered-to-disk mode. The latter is the default. Bloom Filter
+	// indexes are added based on BloomBitsPerValue sizes to speed up
+	// arbitrary data lookups.
 	var writer *parquet.GenericWriter[NHSNoHash]
+	bloomFilter := parquet.BloomFilters(
+		parquet.SplitBlockFilter(BloomBitsPerValue, "NHSNo"),
+		parquet.SplitBlockFilter(BloomBitsPerValue, "Hash"),
+	)
 	if inMemory {
-		writer = parquet.NewGenericWriter[NHSNoHash](f)
+		writer = parquet.NewGenericWriter[NHSNoHash](f, bloomFilter)
 	} else {
 		writer = parquet.NewGenericWriter[NHSNoHash](
 			f,
+			bloomFilter,
 			parquet.ColumnPageBuffers(parquet.NewFileBufferPool("", "nhsht-buffers.*")),
 		)
 	}

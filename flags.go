@@ -7,8 +7,6 @@ import (
 	"github.com/jessevdk/go-flags"
 )
 
-const version string = "0.0.3"
-
 // Flags are the flag options consuming os.Args.
 type Flags struct {
 	SaltFile    string `short:"s" long:"saltfile" description:"file to save hex encoded salt (required)" required:"yes"`

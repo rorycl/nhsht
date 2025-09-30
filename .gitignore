@@ -4,3 +4,5 @@ nhsht
 cover*
 # ignore tmp output directory
 tmp/*
+# goreleaser works out of dist
+dist/

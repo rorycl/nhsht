@@ -44,8 +44,10 @@ numbers for England.
 
 e.g.
   nhsht -s salt -p hashes.parquet
+
 to generate only 20 records:
   nhsht -s salt -p hashes.parquet -r 20
+
 to show progress:
   nhsht -s salt -p hashes.parquet -v`
 

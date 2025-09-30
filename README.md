@@ -3,7 +3,7 @@
 Generate a random salt and hash table for NHS numbers in England and
 save the output to a parquet file.
 
-version 0.0.4 : 30 September 2025 : add bloom filters
+version 0.0.5 : 30 September 2025 : early cancellation cleanup
 
 ## About
 
@@ -33,7 +33,7 @@ Lookups with `duckdb` for sets of nhs numbers are reasonably fast. This
 is despite records being interleaved by NHS number due to the use of
 goroutines in the generation of hashes, which outputs records in a
 non-deterministic order. For faster lookups by hash, it may be
-worthwhile resorting the parquet file by hash, for example:
+worthwhile re-sorting the parquet file by hash, for example:
 
 ```sql
 $ duckdb -c "
@@ -132,7 +132,7 @@ Usage:
 
 NHS Number salted hash table generator.
 
-version 0.0.4
+version 0.0.5
 
 This program: 
 
@@ -149,8 +149,10 @@ numbers for England.
 
 e.g.
   nhsht -s salt -p hashes.parquet
+
 to generate only 20 records:
   nhsht -s salt -p hashes.parquet -r 20
+
 to show progress:
   nhsht -s salt -p hashes.parquet -v
 

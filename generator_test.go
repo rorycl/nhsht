@@ -55,5 +55,63 @@ func TestGenerator(t *testing.T) {
 		err = errors.New("invalid number of records")
 		t.Errorf("got %d records want %d", got, want)
 	}
+}
+
+func TestGenerateNumber(t *testing.T) {
+
+	tests := []struct {
+		nr        []NHSNumberRange
+		records   int
+		verbose   bool
+		earlyDone bool
+		count     int // number of records expected
+	}{
+		{
+			nr:        []NHSNumberRange{NHSNumberRange{100_000_001, 100_000_100}},
+			records:   10,
+			verbose:   false,
+			earlyDone: false,
+			count:     10,
+		},
+		{
+			nr:        []NHSNumberRange{NHSNumberRange{100_000_001, 100_000_100}},
+			records:   10,
+			verbose:   true,
+			earlyDone: false,
+			count:     10,
+		},
+		{
+			nr:        []NHSNumberRange{NHSNumberRange{100_000_001, 100_000_100}},
+			records:   10000,
+			verbose:   true,
+			earlyDone: false,
+			count:     100,
+		},
+		{
+			nr:        []NHSNumberRange{NHSNumberRange{100_000_001, 100_000_100}},
+			records:   10,
+			verbose:   true,
+			earlyDone: true,
+			count:     0,
+		},
+	}
+	for ii, tt := range tests {
+		t.Run(fmt.Sprintf("test_%d", ii), func(t *testing.T) {
+			NumberRanges = tt.nr // override package NumberRanges
+			done := make(chan struct{})
+
+			gn := generateNumber(tt.records, tt.verbose, done)
+			i := 0
+			if tt.earlyDone {
+				done <- struct{}{}
+			}
+			for range gn {
+				i++
+			}
+			if got, want := i, tt.count; got != want {
+				t.Errorf("got %d want %d", got, want)
+			}
+		})
+	}
 
 }

@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 )
 
 // NHSNumberRange describes the max and min of an NHS number range.
@@ -18,21 +21,34 @@ var NumberRanges []NHSNumberRange = []NHSNumberRange{
 
 // generateNumber generates the NHS numbers for England and puts them on
 // the nhsNumberChan. If numberOfRecords is not 0, only this number of
-// records is generated.
-func generateNumber(numberOfRecords int, verbose bool) <-chan int {
+// records is generated. The done chan allows for early cancellation.
+func generateNumber(numberOfRecords int, verbose bool, done <-chan struct{}) <-chan int {
 	nhsNumberChan := make(chan int)
 	i := 0
 	go func() {
 		defer close(nhsNumberChan)
 		for _, nr := range NumberRanges {
 			for r := nr.minimum; r <= nr.maximum; r++ {
+
+				// Return early on "done" signal.
+				select {
+				case <-done:
+					return
+				default:
+				}
+
 				nhsNumberChan <- r
+
+				// Increment record count, exiting early if record
+				// target achieved.
 				i++
 				if numberOfRecords > 0 {
 					if i >= numberOfRecords {
 						return
 					}
 				}
+
+				// Print progress.
 				if verbose && i%100_000 == 0 {
 					fmt.Printf("%3.1fm records generated\n", float32(i)/1_000_000.0)
 				}
@@ -58,8 +74,10 @@ func hasher(salt []byte, reader <-chan int, writer chan<- NHSNoHash) {
 // flushing to disk and whether generated records should be reported.
 // The function sets up and saves the salt, opens and then sets up the
 // parquet file saving destination. Following this the number generator
-// is initialised, then several hashing goroutines which write to the
-// parquet file output channel.
+// is initialised, then several hashing goroutines are created which
+// write to the parquet file output channel. On receipt of a shutdown
+// signal the generator will be interrupted and will attempt to clean up
+// the generated files.
 func Generator(
 	saltFile, parquetFile string, numRecords, numGoRoutines int,
 	inMemory, verbose bool) error {
@@ -81,8 +99,10 @@ func Generator(
 		return err
 	}
 
-	// Initialise the NHS number generator.
-	numberChan := generateNumber(numRecords, verbose)
+	// Initialise the early stop chan and NHS number generator and
+	// early.
+	done := make(chan struct{})
+	numberChan := generateNumber(numRecords, verbose, done)
 
 	// Setup a number of hasher goroutines to start the generation
 	// process. When the hashers are finished, close the writerChan to
@@ -98,16 +118,44 @@ func Generator(
 			hasher(salt, numberChan, writerChan)
 		}()
 	}
+
+	// If a ^C signal is received, shutdown the numberChan channel
+	// with a signal to done which has the effect of triggering closing
+	// writerChan.
+	var closedEarly bool // a very small chance of race
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigs
+		closedEarly = true
+		fmt.Println("\nReceived early shutdown signal.")
+		close(done)
+	}()
+
+	// Wait for hashing to complete, then close the writer chan.
 	go func() {
 		wg.Wait()
 		close(writerChan)
 		if verbose {
-			fmt.Println("Writing parquet file. Please wait.")
+			if closedEarly {
+				fmt.Println("Cleaning up parquet, temporary and salt files.")
+			} else {
+				fmt.Println("Writing parquet file. Please wait.")
+			}
 		}
 	}()
 
+	// Wait for parquet writer to complete writing and/or cleanup,
+	// reporting any errors.
 	if err := <-errChan; err != nil {
-		return fmt.Errorf("error signal from parquetwriter: %w", err)
+		return fmt.Errorf("error from parquetwriter: %w", err)
+	}
+
+	// Remove the main output files if the program exited early.
+	if closedEarly {
+		_ = os.Remove(parquetFile)
+		_ = os.Remove(saltFile)
+		fmt.Println("Cleanup done.")
 	}
 
 	return nil

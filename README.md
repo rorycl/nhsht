@@ -37,7 +37,7 @@ worthwhile re-sorting the parquet file by hash, for example:
 
 ```sql
 $ duckdb -c "
-PRAGMA memory_limit='6GB'; 
+PRAGMA memory_limit='6GB';
 PRAGMA threads=4;
 COPY (
     SELECT
@@ -52,8 +52,14 @@ COPY (
 
 ## Stats
 
-Tests were run on an old i7-7600U @ 2.80GHz machine (4 core, from 2017)
-with 8GB RAM and an nvme disk. Results are indicative only.
+A MacBook Pro M4 with 12 cores and 24GB RAM generated 300m records in
+buffered mode in 5m28s with the default 96 goroutines, and 4m54s for 192
+goroutines.
+
+The tests below were run on an old i7-7600U @ 2.80GHz machine (4 core,
+from 2017) with 8GB RAM and an nvme disk.
+
+Results are indicative only.
 
 ```
 300 million records generated in 7m57s.
@@ -128,13 +134,13 @@ real	0m25.346s
 $ nhsht -h
 
 Usage:
-  nhsht 
+  nhsht
 
 NHS Number salted hash table generator.
 
 version 0.0.5
 
-This program: 
+This program:
 
 * generates a random 256bit salt and saves this, hex encoded, to the
   specified file.
